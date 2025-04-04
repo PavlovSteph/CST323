@@ -6,7 +6,7 @@ import java.util.List;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
-@XmlRootElement(name="orders")
+@XmlRootElement(name="ORDERS")
 public class OrdersList {
 	
 	private List<OrderModel> orders = new ArrayList<OrderModel>();
