@@ -2,6 +2,8 @@ package com.gcu.controller;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,79 +22,62 @@ import jakarta.validation.Valid;
 @Controller
 @RequestMapping("/login")
 public class LoginController { 
-	
-	private OrdersBusinessInterface service;
-	private SecurityBusinessService security;
-	
-	/**
-     * Setter for the OrdersBusinessInterface dependency.
-     * 
-     * @param service The OrdersBusinessInterface implementation.
-     */
+
+    private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
+    
+    private OrdersBusinessInterface service;
+    private SecurityBusinessService security;
+
     @Autowired
     public void setOrdersBusinessService(OrdersBusinessInterface service) {
         this.service = service;
     }
-    
-    /**
-     * Setter for the SecurityBusinessService dependency.
-     * 
-     * @param security The SecurityBusinessService instance.
-     */
+
     @Autowired
     public void setSecurityBusinessService(SecurityBusinessService security) {
         this.security = security;
     }
-	
-	/**
-	 * Displays the login form.
-     *
-     * @param model the Spring MVC model to add attributes
-     * @return the view name for the login form
-	 */
-	@GetMapping("/")
-	public String display(Model model)
-	{
-		model.addAttribute("title", "Login Form");
+
+    @GetMapping("/")
+    public String display(Model model) {
+        model.addAttribute("title", "Login Form");
         model.addAttribute("loginModel", new LoginModel());
-        
-		return "login";
-	}
-	
-	/**
-	 * Processes the login request.
-     *
-     * @param loginModel     the LoginModel containing login credentials
-     * @param bindingResult  the Spring MVC binding result for validation
-     * @param model          the Spring MVC model to add attributes
-     * @return the view name for displaying orders if login is successful, otherwise the login form
-	 */
-	@PostMapping("/doLogin")
+        logger.info("Login page displayed");
+        return "login";
+    }
+
+    @PostMapping("/doLogin")
     public String doLogin(@Valid LoginModel loginModel, BindingResult bindingResult, Model model) {
-        // Print username and password to the console
-        if (bindingResult.hasErrors())
-        {
-        	model.addAttribute("title", "Login Form");
-        	return "login";
-        }
-        
-     // Call the test method of OrdersBusinessService
-        //service.test();
-        
-        // Authenticate user
-        boolean authenticated = security.authenticate(loginModel.getUsername(), loginModel.getPassword());
-        if (!authenticated) {
-            // Handle unsuccessful authentication
-            return "login"; // Return login form with error message
+        logger.info("Login attempt for user: {}", loginModel.getUsername());
+
+        if (bindingResult.hasErrors()) {
+            logger.warn("Validation errors occurred while logging in for user: {}", loginModel.getUsername());
+            model.addAttribute("title", "Login Form");
+            return "login";
         }
 
+        boolean authenticated = security.authenticate(loginModel.getUsername(), loginModel.getPassword());
+        
+        if (!authenticated) {
+            logger.warn("Failed login attempt for user: {}", loginModel.getUsername());
+            model.addAttribute("error", "Invalid username or password");
+            return "login";
+        }
+
+        logger.info("Successful login for user: {}", loginModel.getUsername());
+
         List<OrderModel> orders = service.getOrders();
-       
-        // Return the view name
+
         model.addAttribute("title", "My Orders");
         model.addAttribute("orders", orders);
-        
+
         return "orders";
     }
 
+    @GetMapping("/logout")
+    public String logout(Model model) {
+        logger.info("User logged out");
+        model.addAttribute("message", "You have been logged out successfully");
+        return "login";
+    }
 }
